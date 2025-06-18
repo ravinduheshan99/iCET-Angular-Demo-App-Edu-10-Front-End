@@ -1,32 +1,40 @@
 import { NgIf } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {MatInputModule} from '@angular/material/input';
+import {MatIconModule} from '@angular/material/icon';
+import * as AOS from 'aos';
+import {MatCheckboxModule} from '@angular/material/checkbox';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-product',
   standalone: true,
-  imports: [ReactiveFormsModule, NgIf, HttpClientModule],
+  imports: [ReactiveFormsModule, NgIf, HttpClientModule, MatInputModule, MatIconModule, MatCheckboxModule, MatProgressSpinnerModule],
   templateUrl: './product.component.html',
   styleUrl: './product.component.css'
 })
-export class ProductComponent {
+
+export class ProductComponent implements OnInit{
+
+  public isNetworkingRequestPending:boolean = false;
 
   constructor(private http:HttpClient){
-
+    console.log(http);
   }
 
-  //NIC_REGEX1 = /[0-9]{9}[XxVv]/;
-  //NIC_REGEX2 = /[0-9]{9}[XxVv][e]/;
-  //nicValue: string = '';
+  ngOnInit(): void{
+    AOS.init({
+      duration:500
+    })
+  }
+
 
   productForm = new FormGroup({
     name: new FormControl("Name", [Validators.required, Validators.maxLength(10), Validators.minLength(3)]),
     description: new FormControl("", [Validators.required]),
     price: new FormControl(0, Validators.required),
-    //email: new FormControl("", Validators.pattern(/\@{1}/)),
-    //nic: new FormControl("", Validators.pattern(this.NIC_REGEX1))
-
   })
 
   submit() {
@@ -37,10 +45,22 @@ export class ProductComponent {
       return;
     }
 
-    this.http.post("http://localhost:8080/product",this.productForm.value).subscribe(data=>{
-      console.log(data)
-    })
+    this.isNetworkingRequestPending=true;
+    this.productForm.disable();
 
+    this.http.post("http://localhost:8080/product",this.productForm.value).subscribe(
+      (respones)=>{
+        console.log(respones)
+        this.isNetworkingRequestPending=false;
+        this.productForm.enable();
+      },
+
+      (error)=>{
+        console.error(error)
+        this.isNetworkingRequestPending=false;
+        this.productForm.enable();
+      }
+    )
   }
 
   reset(){
@@ -51,18 +71,5 @@ export class ProductComponent {
       price:0
     })
   }
-
-  /*
-  onNicInput(event: Event): void {
-  const inputElement = event.target as HTMLInputElement;
-  this.nicValue = inputElement.value;
 }
 
-
-  isValidNic(value: string): boolean {
-    return this.NIC_REGEX2.test(value); 
-  }
-  
-  */
-  
-}
